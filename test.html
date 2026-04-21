@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>API 测试</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        button { padding: 10px 20px; margin: 10px 0; cursor: pointer; }
+        pre { background: #333; padding: 15px; border-radius: 8px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>Cloudflare Pages API 测试</h1>
+    <button onclick="testApi()">测试 /api</button>
+    <button onclick="testRoot()">测试 /</button>
+    <pre id="output">点击按钮测试...</pre>
+
+    <script>
+        const BASE = 'https://xn--cf-pages-im2mm00bmrkqv6g.pages.dev';
+        
+        async function testApi() {
+            const output = document.getElementById('output');
+            output.textContent = '测试 /api...\n';
+            
+            try {
+                const resp = await fetch(BASE + '/api', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ test: true })
+                });
+                
+                const text = await resp.text();
+                output.textContent = `状态码: ${resp.status}\n响应: ${text}`;
+            } catch (error) {
+                output.textContent = `错误: ${error.message}`;
+            }
+        }
+        
+        async function testRoot() {
+            const output = document.getElementById('output');
+            output.textContent = '测试 /...\n';
+            
+            try {
+                const resp = await fetch(BASE + '/');
+                const text = await resp.text();
+                output.textContent = `状态码: ${resp.status}\n内容前200字符: ${text.slice(0, 200)}`;
+            } catch (error) {
+                output.textContent = `错误: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

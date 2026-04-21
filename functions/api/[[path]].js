@@ -7,15 +7,14 @@ export async function onRequest(context) {
     const { request } = context;
     const url = new URL(request.url);
     
-    // 允许的来源
-    const allowedOrigins = ['https://你的用户名.github.io', 'null'];
-    const origin = request.headers.get('Origin');
+    // 获取请求来源
+    const origin = request.headers.get('Origin') || '';
     
     // 处理 CORS 预检请求
     if (request.method === 'OPTIONS') {
         return new Response(null, {
             headers: {
-                'Access-Control-Allow-Origin': allowedOrigins.includes(origin) ? origin : '',
+                'Access-Control-Allow-Origin': origin,
                 'Access-Control-Allow-Methods': 'POST, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type',
                 'Access-Control-Max-Age': '86400',
@@ -25,7 +24,7 @@ export async function onRequest(context) {
     
     // 只允许 POST 请求
     if (request.method !== 'POST') {
-        return jsonResponse({ error: '只支持 POST 请求' }, 405);
+        return jsonResponse({ error: '只支持 POST 请求' }, 405, origin);
     }
     
     try {
@@ -38,7 +37,7 @@ export async function onRequest(context) {
             return jsonResponse(result, 200, origin);
         }
         
-        return jsonResponse({ error: '未知操作' }, 400);
+        return jsonResponse({ error: '未知操作' }, 400, origin);
         
     } catch (error) {
         return jsonResponse({ error: error.message }, 500, origin);
