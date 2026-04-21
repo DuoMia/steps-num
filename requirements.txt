@@ -1,4 +1,0 @@
-flask>=2.0
-requests>=2.25
-pytz>=2020.1
-pycryptodome>=3.10
