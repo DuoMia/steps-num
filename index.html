@@ -87,7 +87,8 @@
 
     <script>
         // ⚠️ 部署后修改为你的 Cloudflare Pages 域名
-        const API_URL = 'https://steps-num.pages.dev/';
+        // 如果在同一域名下，使用相对路径；否则使用完整地址
+const API_URL = '/api';
         
         document.getElementById('form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -115,7 +116,7 @@
                     result.className = 'result success';
                     result.textContent = `✅ ${data.message}`;
                 } else {
-                    result.className = 'result error';
+                    result.className = 'result error';ps://xn--cf-pages-im2mm00bmrkqv6g.pages.dev/api
                     result.textContent = `❌ ${data.message}`;
                 }
                 result.style.display = 'block';
