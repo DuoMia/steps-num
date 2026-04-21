@@ -150,20 +150,35 @@ async function loginAccessToken(user, password) {
             'appname': 'com.xiaomi.hm.health',
             'appplatform': 'android_phone',
             'x-hm-ekv': '1',
-        }
+        },
+        redirect: 'manual' // 手动处理重定向
     });
     
-    if (response.status === 303) {
-        const location = response.headers.get('Location');
-        const codeMatch = location.match(/access=([^&]+)/);
-        if (codeMatch) {
-            return { success: true, code: codeMatch[1] };
+    // Cloudflare Workers 处理重定向
+    const location = response.headers.get('Location') || response.headers.get('location') || '';
+    
+    if (response.status === 303 || response.status === 302 || response.status === 301) {
+        if (location) {
+            const codeMatch = location.match(/access=([^&]+)/);
+            if (codeMatch) {
+                return { success: true, code: codeMatch[1] };
+            }
+            const errorMatch = location.match(/error=([^&]+)/);
+            if (errorMatch) {
+                return { success: false, error: errorMatch[1] };
+            }
         }
     }
     
-    const location = response.headers.get('Location') || '';
-    const errorMatch = location.match(/error=([^&]+)/);
-    return { success: false, error: errorMatch ? errorMatch[1] : '未知错误' };
+    // 如果不是重定向，尝试读取响应体
+    try {
+        const text = await response.text();
+        if (text) {
+            return { success: false, error: '登录响应: ' + text.substring(0, 100) };
+        }
+    } catch (e) {}
+    
+    return { success: false, error: '无重定向响应，状态码: ' + response.status };
 }
 
 // 获取 login_token 和 app_token
