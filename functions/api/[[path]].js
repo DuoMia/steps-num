@@ -83,6 +83,39 @@ async function aesEncrypt(plaintext, key, iv) {
     return btoa(String.fromCharCode(...new Uint8Array(encrypted)));
 }
 
+// AES 解密
+async function aesDecrypt(ciphertext, key, iv) {
+    try {
+        const encoder = new TextEncoder();
+        const cryptoKey = await crypto.subtle.importKey(
+            'raw',
+            encoder.encode(key.padEnd(16, '\0').slice(0, 16)),
+            { name: 'AES-CBC' },
+            false,
+            ['decrypt']
+        );
+        
+        const ivBuffer = encoder.encode(iv.padEnd(16, '\0').slice(0, 16));
+        
+        // 解码 base64
+        const binary = atob(ciphertext);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        
+        const decrypted = await crypto.subtle.decrypt(
+            { name: 'AES-CBC', iv: ivBuffer },
+            cryptoKey,
+            bytes
+        );
+        
+        return new TextDecoder().decode(decrypted);
+    } catch (e) {
+        return null;
+    }
+}
+
 // URL 编码
 function urlencode(data) {
     return Object.entries(data)
@@ -173,12 +206,24 @@ async function loginAccessToken(user, password) {
     // 如果不是重定向，尝试读取响应体
     try {
         const text = await response.text();
-        if (text) {
-            return { success: false, error: '登录响应: ' + text.substring(0, 100) };
+        if (text && text.length > 0) {
+            // 尝试解密响应
+            try {
+                const decrypted = await aesDecrypt(text, HM_AES_KEY, HM_AES_IV);
+                if (decrypted) {
+                    // 从解密结果中提取错误信息
+                    const errorMatch = decrypted.match(/error=([^&]+)/);
+                    if (errorMatch) {
+                        return { success: false, error: '登录失败: ' + decodeURIComponent(errorMatch[1]) };
+                    }
+                    return { success: false, error: '登录失败: ' + decrypted.substring(0, 50) };
+                }
+            } catch (e) {}
+            return { success: false, error: '账号或密码错误' };
         }
     } catch (e) {}
     
-    return { success: false, error: '无重定向响应，状态码: ' + response.status };
+    return { success: false, error: '登录请求失败，状态码: ' + response.status };
 }
 
 // 获取 login_token 和 app_token
